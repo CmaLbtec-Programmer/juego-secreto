@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amigo Secreto - Oficina</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti for Celebration effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between selection:bg-sky-500 selection:text-white">
+
+    <!-- Header & Logo Section -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <!-- Company Logo Container -->
+            <div class="flex items-center gap-3">
+                <div id="logo-preview-container" class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+                    <img id="logo-img" src="https://media.licdn.com/dms/image/v2/C4E0BAQH_7KVZOjNvmw/company-logo_200_200/company-logo_200_200/0/1679429561465/cma_laboratorio_tecnologia_sas_logo?e=2147483647&v=beta&t=8QxgRlnKLDYTk27o_CYAXPHxIoVews3gnfvKwlzG6fM" alt="Logo Empresa" class="w-full h-full object-contain hidden">
+                    <i id="logo-placeholder" class="fa-solid fa-building-user text-slate-400 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight leading-none">Amigo Secreto</h1>
+                    <p class="text-xs font-medium text-slate-500 mt-1">Sorteo Navideño & Festivo de Oficina</p>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center gap-3">
+                <!-- Custom File Input for Logo -->
+                <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-300 transition flex items-center gap-2">
+                    <i class="fa-solid fa-upload"></i>
+                    <span class="hidden sm:inline">Cargar Logo</span>
+                    <input type="file" id="logo-input" accept="image/*" class="hidden">
+                </label>
+                
+                <!-- Toggle Management Panel Button -->
+                <button id="toggle-admin-btn" onclick="toggleAdminPanel()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-2">
+                    <i class="fa-solid fa-users-gear"></i>
+                    <span class="hidden sm:inline">Gestionar Participantes</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full">
+
+        <!-- ADMIN PANEL (Collapsible) -->
+        <section id="admin-panel" class="hidden mb-8 bg-white rounded-2xl shadow-md border border-slate-200 p-6 transition-all duration-300">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus text-sky-600"></i> Administrar Lista de Participantes
+                    </h2>
+                    <p class="text-xs text-slate-500">Agrega o remueve personas de la actividad antes de iniciar el juego.</p>
+                </div>
+                <button onclick="toggleAdminPanel()" class="text-slate-400 hover:text-slate-600 text-sm p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Form to Add Participant -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 h-fit">
+                    <h3 class="text-sm font-bold text-slate-700 mb-3">Nuevo Participante</h3>
+                    <form id="add-participant-form" onsubmit="handleAddParticipant(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo</label>
+                            <input type="text" id="participant-name" required placeholder="Ej: Ana María Gómez" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Foto o Avatar (Opcional)</label>
+                            <div class="flex items-center gap-2">
+                                <label class="cursor-pointer bg-white hover:bg-slate-100 text-slate-700 text-xs border border-slate-300 rounded-lg px-3 py-2 flex-grow text-center font-medium truncate">
+                                    <span id="photo-filename">Subir foto...</span>
+                                    <input type="file" id="participant-photo" accept="image/*" onchange="updateFileNameDisplay(this)" class="hidden">
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm py-2 px-4 rounded-lg shadow-sm transition">
+                            <i class="fa-solid fa-plus mr-1"></i> Agregar Participante
+                        </button>
+                    </form>
+                </div>
+
+                <!-- List of Current Participants -->
+                <div class="lg:col-span-2">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-sm font-bold text-slate-700">Participantes Registrados (<span id="participant-count">0</span>)</h3>
+                        <button onclick="resetAllData()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold hover:underline">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Reiniciar Todo el Juego
+                        </button>
+                    </div>
+                    <div id="participants-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-2 custom-scrollbar">
+                        <!-- Dynamic list items will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- GAME DASHBOARD -->
+        <section class="max-w-2xl mx-auto">
+            
+            <!-- Turn Selection Step Card -->
+            <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden mb-6">
+                <div class="bg-gradient-to-r from-sky-600 to-indigo-600 p-6 text-white text-center">
+                    <span class="inline-block bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2">Paso 1</span>
+                    <h2 class="text-2xl font-extrabold">¿Quién va a jugar ahora?</h2>
+                    <p class="text-sky-100 text-sm mt-1">Selecciona tu nombre de la lista para descubrir a quién le regalarás</p>
+                </div>
+
+                <div class="p-6 md:p-8 flex flex-col items-center">
+                    <!-- Dropdown selector -->
+                    <div class="w-full max-w-md mb-6">
+                        <label for="current-player-select" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">Selecciona tu nombre</label>
+                        <select id="current-player-select" onchange="handleSelectPlayer()" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:border-sky-500 focus:bg-white text-base shadow-sm">
+                            <option value="">-- Elige tu nombre aquí --</option>
+                        </select>
+                    </div>
+
+                    <!-- Selected Player Preview Card -->
+                    <div id="player-preview" class="hidden flex-col items-center text-center animate-fade-in my-2">
+                        <div class="relative mb-3">
+                            <img id="player-preview-img" src="" alt="Foto" class="w-28 h-28 rounded-full object-cover border-4 border-sky-500 shadow-md">
+                            <span class="absolute bottom-0 right-0 bg-emerald-500 text-white text-xs p-1.5 rounded-full border-2 border-white">
+                                <i class="fa-solid fa-check"></i>
+                            </span>
+                        </div>
+                        <h3 id="player-preview-name" class="text-xl font-bold text-slate-800"></h3>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">Es tu turno de descubrir tu Amigo Secreto</p>
+                        
+                        <!-- Action Button to Draw -->
+                        <button id="draw-btn" onclick="startDrawAnimation()" class="mt-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-lg px-8 py-3.5 rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition active:translate-y-0 flex items-center gap-3">
+                            <i class="fa-solid fa-gift text-xl"></i>
+                            <span>Descubrir mi Amigo Secreto</span>
+                        </button>
+                    </div>
+
+                    <!-- Empty state notice when no active players -->
+                    <div id="empty-state-notice" class="hidden text-center py-6 text-slate-500">
+                        <i class="fa-solid fa-flag-checkered text-4xl text-amber-500 mb-3"></i>
+                        <h3 class="text-lg font-bold text-slate-700">¡Sorteo Completado!</h3>
+                        <p class="text-xs max-w-sm mt-1">Todos los participantes han descubierto a su Amigo Secreto exitosamente.</p>
+                        <button onclick="resetDrawsOnly()" class="mt-4 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                            Reiniciar Sorteo (Mantener Personas)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Roulete Animation Overlay Modal -->
+            <div id="roulette-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-white/20">
+                    <h3 class="text-lg font-bold text-slate-600 mb-4">Mezclando nombres...</h3>
+                    
+                    <div class="relative w-36 h-36 mx-auto mb-6 flex items-center justify-center">
+                        <div class="absolute inset-0 rounded-full border-4 border-sky-200 border-t-sky-600 animate-spin"></div>
+                        <img id="roulette-img" src="" alt="Ruleta" class="w-28 h-28 rounded-full object-cover shadow-inner">
+                    </div>
+                    
+                    <div id="roulette-name" class="text-xl font-black text-sky-600 min-h-[2rem] truncate">...</div>
+                    <p class="text-xs text-slate-400 mt-2">¡Guardando la sorpresa!</p>
+                </div>
+            </div>
+
+            <!-- Secret Reveal Modal -->
+            <div id="reveal-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl relative border border-slate-100 animate-pulse-subtle">
+                    
+                    <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                        <i class="fa-solid fa-user-secret"></i>
+                    </div>
+
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">Tu Amigo Secreto es:</h3>
+                    
+                    <!-- Cover Card for Privacy -->
+                    <div id="secret-card-cover" class="my-6 p-6 bg-slate-900 rounded-2xl text-white cursor-pointer hover:bg-slate-800 transition group shadow-lg">
+                        <i class="fa-solid fa-eye text-3xl mb-2 text-sky-400 group-hover:scale-110 transition-transform"></i>
+                        <p class="font-bold text-base">Haz clic para revelar</p>
+                        <p class="text-xs text-slate-400 mt-1">(Asegúrate de que nadie más esté mirando la pantalla)</p>
+                    </div>
+
+                    <!-- Revealed Secret Content -->
+                    <div id="secret-card-content" class="hidden my-6 p-6 bg-gradient-to-b from-sky-50 to-indigo-50 border border-sky-100 rounded-2xl">
+                        <img id="target-img" src="" alt="Foto Amigo Secreto" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md mx-auto mb-3">
+                        <h2 id="target-name" class="text-2xl font-black text-slate-800"></h2>
+                        <span class="inline-block bg-sky-100 text-sky-700 text-xs font-bold px-3 py-1 rounded-full mt-2">¡Shh! Es un secreto 🤫</span>
+                    </div>
+
+                    <!-- Close Button -->
+                    <button onclick="closeRevealModal()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-6 rounded-xl transition shadow">
+                        Listo, ya lo memoricé
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Progress / Status Tracker -->
+        <section class="max-w-2xl mx-auto mt-8 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie"></i> Estado del Sorteo
+            </h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span class="block text-2xl font-black text-slate-800" id="stat-total">0</span>
+                    <span class="text-xs font-medium text-slate-500">Total Integrantes</span>
+                </div>
+                <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                    <span class="block text-2xl font-black text-emerald-600" id="stat-drawn">0</span>
+                    <span class="text-xs font-medium text-emerald-700">Ya Descubrieron</span>
+                </div>
+                <div class="bg-sky-50 p-3 rounded-xl border border-sky-100 col-span-2 sm:col-span-1">
+                    <span class="block text-2xl font-black text-sky-600" id="stat-pending">0</span>
+                    <span class="text-xs font-medium text-sky-700">Faltan por Sacar</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+        <p>Amigo Secreto de Oficina • Listo para GitHub Pages</p>
+    </footer>
+
+    <script>
+        // Default Mock Data for immediate testing
+        const DEFAULT_PARTICIPANTS = [
+            { id: '1', name: 'Angelica Orozco', photo: 'https://lh3.googleusercontent.com/d/13jJrCXcWjLKmutxq1HHM8fdUhpwjWA2n', drawn: false, isAssigned: false },
+            { id: '2', name: 'Brenda Ximena', photo: 'https://lh3.googleusercontent.com/d/12fI20uWSyf_HxIYD9whXSi2CyGsXzL-k', drawn: false, isAssigned: false },
+            { id: '3', name: 'Jose', photo: 'https://lh3.googleusercontent.com/d/1ShmB5tnowBnKY0O2jcN-ioNkkPsXrjp7', drawn: false, isAssigned: false },
+            { id: '4', name: 'Leidy Yudit', photo: 'https://lh3.googleusercontent.com/d/1jcU-fZI298UBozNAvwOqBSL0CIT-gaas', drawn: false, isAssigned: false },
+            { id: '5', name: 'Leonardo', photo: 'https://lh3.googleusercontent.com/d/1tEl4IGCkxXPKCnLJMQXqIkhrVNDw3ob4', drawn: false, isAssigned: false },
+            { id: '6', name: 'José Félix', photo: 'https://lh3.googleusercontent.com/d/1-OBXiGPAdyFNKj4NoplmoPBMg_IKkSJw', drawn: false, isAssigned: false }
+        ];
+
+        // Global State
+        let participants = [];
+        let logoUrl = null;
+        let selectedPlayerId = null;
+        let currentTargetPlayer = null;
+
+        // Initialize App on DOM Load
+        window.onload = function() {
+            loadStateFromLocalStorage();
+            setupLogoHandler();
+            renderAdminList();
+            updateDropdown();
+            updateStats();
+        };
+
+        // --- LOCAL STORAGE & STATE MANAGEMENT ---
+        function loadStateFromLocalStorage() {
+            const savedParticipants = localStorage.getItem('amigo_secreto_participants');
+            const savedLogo = localStorage.getItem('amigo_secreto_logo');
+
+            if (savedParticipants) {
+                try {
+                    participants = JSON.parse(savedParticipants);
+                } catch (e) {
+                    participants = [...DEFAULT_PARTICIPANTS];
+                }
+            } else {
+                participants = [...DEFAULT_PARTICIPANTS];
+                saveState();
+            }
+
+            if (savedLogo) {
+                logoUrl = savedLogo;
+                displayLogo(logoUrl);
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('amigo_secreto_participants', JSON.stringify(participants));
+            if (logoUrl) {
+                localStorage.setItem('amigo_secreto_logo', logoUrl);
+            }
+        }
+
+        // --- LOGO BRANDING MANAGEMENT ---
+        function setupLogoHandler() {
+            const logoInput = document.getElementById('logo-input');
+            logoInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        logoUrl = event.target.result;
+                        displayLogo(logoUrl);
+                        saveState();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function displayLogo(url) {
+            const imgEl = document.getElementById('logo-img');
+            const placeholderEl = document.getElementById('logo-placeholder');
+            imgEl.src = url;
+            imgEl.classList.remove('hidden');
+            placeholderEl.classList.add('hidden');
+        }
+
+        // --- ADMIN & PARTICIPANT MANAGEMENT ---
+        function toggleAdminPanel() {
+            const panel = document.getElementById('admin-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        function updateFileNameDisplay(input) {
+            const label = document.getElementById('photo-filename');
+            if (input.files && input.files[0]) {
+                label.innerText = input.files[0].name;
+            } else {
+                label.innerText = 'Subir foto...';
+            }
+        }
+
+        function generateAvatarUrl(name) {
+            return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+        }
+
+        function handleAddParticipant(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('participant-name');
+            const photoInput = document.getElementById('participant-photo');
+            
+            const name = nameInput.value.trim();
+            if (!name) return;
+
+            const newId = Date.now().toString();
+
+            if (photoInput.files && photoInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    addParticipantObj(newId, name, event.target.result);
+                };
+                reader.readAsDataURL(photoInput.files[0]);
+            } else {
+                addParticipantObj(newId, name, generateAvatarUrl(name));
+            }
+
+            // Reset form
+            nameInput.value = '';
+            photoInput.value = '';
+            document.getElementById('photo-filename').innerText = 'Subir foto...';
+        }
+
+        function addParticipantObj(id, name, photo) {
+            participants.push({
+                id: id,
+                name: name,
+                photo: photo,
+                drawn: false,
+                isAssigned: false
+            });
+            saveState();
+            renderAdminList();
+            updateDropdown();
+            updateStats();
+        }
+
+        function removeParticipant(id) {
+            participants = participants.filter(p => p.id !== id);
+            saveState();
+            renderAdminList();
+            updateDropdown();
+            updateStats();
+            
+            if (selectedPlayerId === id) {
+                selectedPlayerId = null;
+                document.getElementById('player-preview').classList.add('hidden');
+                document.getElementById('current-player-select').value = '';
+            }
+        }
+
+        function renderAdminList() {
+            const container = document.getElementById('participants-list');
+            const countEl = document.getElementById('participant-count');
+            countEl.innerText = participants.length;
+
+            if (participants.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 col-span-2 text-center py-4">No hay participantes registrados.</p>`;
+                return;
+            }
+
+            container.innerHTML = participants.map(p => `
+                <div class="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <img src="${p.photo}" alt="${p.name}" class="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0">
+                        <div class="truncate">
+                            <h4 class="text-xs font-bold text-slate-800 truncate">${p.name}</h4>
+                            <span class="text-[10px] ${p.drawn ? 'text-emerald-600 font-semibold' : 'text-slate-400'}">
+                                ${p.drawn ? '✓ Ya sacó papelito' : 'Pendiente'}
+                            </span>
+                        </div>
+                    </div>
+                    <button onclick="removeParticipant('${p.id}')" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition" title="Eliminar">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // --- GAMEPLAY ENGINE ---
+        function updateDropdown() {
+            const select = document.getElementById('current-player-select');
+            const emptyNotice = document.getElementById('empty-state-notice');
+            
+            // Available to draw: People who haven't drawn yet
+            const availableToDraw = participants.filter(p => !p.drawn);
+
+            select.innerHTML = `<option value="">-- Elige tu nombre aquí --</option>`;
+
+            if (availableToDraw.length === 0 && participants.length > 0) {
+                select.parentElement.classList.add('hidden');
+                emptyNotice.classList.remove('hidden');
+                document.getElementById('player-preview').classList.add('hidden');
+                return;
+            } else {
+                select.parentElement.classList.remove('hidden');
+                emptyNotice.classList.add('hidden');
+            }
+
+            availableToDraw.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.name;
+                select.appendChild(option);
+            });
+        }
+
+        function handleSelectPlayer() {
+            const select = document.getElementById('current-player-select');
+            const playerId = select.value;
+            selectedPlayerId = playerId;
+
+            const preview = document.getElementById('player-preview');
+            
+            if (!playerId) {
+                preview.classList.add('hidden');
+                return;
+            }
+
+            const player = participants.find(p => p.id === playerId);
+            if (player) {
+                document.getElementById('player-preview-img').src = player.photo;
+                document.getElementById('player-preview-name').innerText = player.name;
+                preview.classList.remove('hidden');
+                preview.classList.add('flex');
+            }
+        }
+
+        function getValidTargets(giverId) {
+            // Target cannot be the giver
+            // Target cannot be someone who was already assigned to another giver
+            return participants.filter(p => p.id !== giverId && !p.isAssigned);
+        }
+
+        function startDrawAnimation() {
+            if (!selectedPlayerId) return;
+
+            const giver = participants.find(p => p.id === selectedPlayerId);
+            const validTargets = getValidTargets(giver.id);
+
+            // Edge Case Safety Check
+            if (validTargets.length === 0) {
+                alert('No hay candidatos disponibles para este participante. Es posible que deban reiniciar los sorteos.');
+                return;
+            }
+
+            // CRITICAL EDGE CASE: If 2 people remain, and person A's only option is person B, but person B picking next would be forced to pick themselves.
+            // We select a target randomly from validTargets.
+            let selectedTarget = null;
+            
+            // Special check if we are at the second to last player
+            const unDrawnCount = participants.filter(p => !p.drawn).length;
+            if (unDrawnCount === 2) {
+                // Find the other person who hasn't drawn yet
+                const otherGiver = participants.find(p => !p.drawn && p.id !== giver.id);
+                // If assigning a certain target to current giver leaves the otherGiver with only themselves, avoid that target!
+                const candidateTargets = validTargets.filter(target => {
+                    // If target is assigned to current giver, what's left for otherGiver?
+                    const remainingForOther = participants.filter(p => p.id !== otherGiver.id && !p.isAssigned && p.id !== target.id);
+                    return remainingForOther.length > 0;
+                });
+
+                if (candidateTargets.length > 0) {
+                    selectedTarget = candidateTargets[Math.floor(Math.random() * candidateTargets.length)];
+                } else {
+                    selectedTarget = validTargets[Math.floor(Math.random() * validTargets.length)];
+                }
+            } else {
+                selectedTarget = validTargets[Math.floor(Math.random() * validTargets.length)];
+            }
+
+            currentTargetPlayer = selectedTarget;
+
+            // Trigger Roulette Modal & Animation
+            const rouletteModal = document.getElementById('roulette-modal');
+            const rouletteImg = document.getElementById('roulette-img');
+            const rouletteName = document.getElementById('roulette-name');
+            
+            rouletteModal.classList.remove('hidden');
+
+            let counter = 0;
+            const totalTicks = 25;
+            const interval = setInterval(() => {
+                const randomSample = participants[Math.floor(Math.random() * participants.length)];
+                rouletteImg.src = randomSample.photo;
+                rouletteName.innerText = randomSample.name;
+                counter++;
+
+                if (counter >= totalTicks) {
+                    clearInterval(interval);
+                    rouletteModal.classList.add('hidden');
+                    finalizeDraw(giver, selectedTarget);
+                }
+            }, 100);
+        }
+
+        function finalizeDraw(giver, target) {
+            // Mark state
+            giver.drawn = true;
+            target.isAssigned = true;
+            saveState();
+
+            // Prepare Reveal Modal
+            document.getElementById('target-img').src = target.photo;
+            document.getElementById('target-name').innerText = target.name;
+            
+            // Reset cover state
+            document.getElementById('secret-card-cover').classList.remove('hidden');
+            document.getElementById('secret-card-content').classList.add('hidden');
+
+            // Add click listener to cover card
+            const coverCard = document.getElementById('secret-card-cover');
+            coverCard.onclick = function() {
+                coverCard.classList.add('hidden');
+                document.getElementById('secret-card-content').classList.remove('hidden');
+                
+                // Fire Celebration Confetti
+                confetti({
+                    particleCount: 80,
+                    spread: 60,
+                    origin: { y: 0.6 }
+                });
+            };
+
+            // Show Reveal Modal
+            document.getElementById('reveal-modal').classList.remove('hidden');
+        }
+
+        function closeRevealModal() {
+            document.getElementById('reveal-modal').classList.add('hidden');
+            
+            // Reset player selection area
+            selectedPlayerId = null;
+            document.getElementById('current-player-select').value = '';
+            document.getElementById('player-preview').classList.add('hidden');
+            
+            // Refresh views & statistics
+            renderAdminList();
+            updateDropdown();
+            updateStats();
+        }
+
+        function updateStats() {
+            const total = participants.length;
+            const drawn = participants.filter(p => p.drawn).length;
+            const pending = total - drawn;
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-drawn').innerText = drawn;
+            document.getElementById('stat-pending').innerText = pending;
+        }
+
+        function resetDrawsOnly() {
+            if (confirm('¿Deseas reiniciar el sorteo? Se mantendrán los participantes pero todos podrán volver a sacar su amigo secreto.')) {
+                participants.forEach(p => {
+                    p.drawn = false;
+                    p.isAssigned = false;
+                });
+                saveState();
+                renderAdminList();
+                updateDropdown();
+                updateStats();
+            }
+        }
+
+        function resetAllData() {
+            if (confirm('¿Estás seguro de reiniciar TODO? Esto borrará la lista de participantes actuales.')) {
+                localStorage.removeItem('amigo_secreto_participants');
+                localStorage.removeItem('amigo_secreto_logo');
+                participants = [...DEFAULT_PARTICIPANTS];
+                logoUrl = null;
+                
+                // Reset UI
+                document.getElementById('logo-img').classList.add('hidden');
+                document.getElementById('logo-placeholder').classList.remove('hidden');
+                
+                saveState();
+                renderAdminList();
+                updateDropdown();
+                updateStats();
+            }
+        }
+    </script>
+</body>
+</html>
